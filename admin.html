@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>The March of the Dead · Board</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="admin">
+  <div id="mode" class="mode"></div>
+  <div id="screen"></div>
+  <div id="event" class="event-overlay admin-ev" hidden></div>
+  <div id="modal" class="modal" hidden></div>
+  <button class="gear" data-a="toggle" title="Game master controls (key C)">⚙️<span id="claims-badge" class="badge-n" hidden></span></button>
+  <div id="controls" class="controls" hidden></div>
+
+  <script src="vendor/firebase-app-compat.js"></script>
+  <script src="vendor/firebase-database-compat.js"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/content.js"></script>
+  <script src="js/sync.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>
