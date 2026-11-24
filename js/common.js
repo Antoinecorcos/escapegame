@@ -48,30 +48,6 @@
     </svg>`;
   };
 
-  // treble staff with one note (note like 'F4', 'C5')
-  U.staff = (note) => {
-    const order = ['E4', 'F4', 'G4', 'A4', 'B4', 'C5', 'D5', 'E5', 'F5'];
-    const i = order.indexOf(note);
-    const y = 65 - i * 5;
-    const lines = [25, 35, 45, 55, 65].map((ly) => `<line x1="5" x2="195" y1="${ly}" y2="${ly}" stroke="currentColor" stroke-width="1.5"/>`).join('');
-    return `<svg class="staff" viewBox="0 0 200 90" width="200" height="90" aria-label="a note on a music staff">
-      ${lines}
-      <text x="8" y="72" font-size="62" fill="currentColor" font-family="serif">𝄞</text>
-      <ellipse cx="120" cy="${y}" rx="7.2" ry="5" transform="rotate(-20 120 ${y})" fill="currentColor"/>
-      <line x1="${y > 45 ? 126.5 : 113.5}" x2="${y > 45 ? 126.5 : 113.5}" y1="${y}" y2="${y > 45 ? y - 32 : y + 32}" stroke="currentColor" stroke-width="2"/>
-    </svg>`;
-  };
-
-  U.painting = (p, cls = '') => {
-    const local = `img/paintings/${p.id}.jpg`;
-    const remote = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(p.commons.replace(/ /g, '_')) + '?width=800';
-    return `<figure class="painting ${cls}" data-id="${p.id}">
-      <img src="${local}" alt="${U.esc(p.title)}" loading="lazy"
-        onerror="if(!this.dataset.r){this.dataset.r=1;this.src='${remote}';}else{this.closest('figure').classList.add('noimg');}">
-      <div class="ph"><b>${U.esc(p.title)}</b>${p.desc ? `<small>${U.esc(p.desc)}</small>` : ''}</div>
-    </figure>`;
-  };
-
   // ---------- audio ----------
   const A = (U.audio = {});
   let ctx = null;
@@ -105,44 +81,21 @@
   };
   A.splat = (good = true) => A.tone(good ? 900 : 120, good ? 0.08 : 0.3, good ? 'square' : 'sawtooth', 0, 0.12);
 
-  // "When the Saints Go Marching In" (traditional). Returns line start times in seconds.
-  const NF = { C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.0, A4: 440, C5: 523.25 };
-  const SAINTS = [
-    [['C4', 1], ['E4', 1], ['F4', 1], ['G4', 5], ['C4', 1], ['E4', 1], ['F4', 1], ['G4', 5]],
-    [['C4', 1], ['E4', 1], ['F4', 1], ['G4', 2], ['E4', 2], ['C4', 2], ['E4', 2], ['D4', 5]],
-    [['E4', 1], ['E4', 1], ['D4', 1], ['C4', 3], ['C4', 1], ['E4', 2], ['G4', 2], ['G4', 1], ['F4', 3], ['F4', 1]],
-    [['E4', 1], ['F4', 1], ['G4', 2], ['E4', 2], ['C4', 2], ['D4', 2], ['C4', 6]],
-  ];
-  A.saints = (nLines = 8, beat = 0.3) => {
+  // plays a melody given as lines of [note, beats]; returns each line's start time (seconds)
+  const NF = { C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.0, A4: 440, B4: 493.88, C5: 523.25, D5: 587.33, E5: 659.25 };
+  A.melody = (lines, beat = 0.32) => {
     const starts = []; let t = 0.2;
-    for (let l = 0; l < nLines; l++) {
+    lines.forEach((line) => {
       starts.push(t);
-      SAINTS[l % 4].forEach(([n, b]) => {
-        A.tone(NF[n], b * beat * 0.92, 'sawtooth', t, 0.13);
-        A.tone(NF[n] / 2, b * beat * 0.92, 'square', t, 0.05);
+      line.forEach(([n, b]) => {
+        A.tone(NF[n], b * beat * 0.9, 'square', t, 0.1);
+        A.tone(NF[n] / 2, b * beat * 0.9, 'triangle', t, 0.12);
         t += b * beat;
       });
-      t += beat;
-    }
+    });
     starts.push(t);
     return starts;
   };
-
-  // ---------- speech ----------
-  U.speak = (w) => {
-    if (!('speechSynthesis' in window)) return false;
-    const synth = window.speechSynthesis;
-    synth.cancel();
-    const u = new SpeechSynthesisUtterance(w.text);
-    const voices = synth.getVoices();
-    const norm = (l) => (l || '').replace('_', '-').toLowerCase();
-    const v = voices.find((x) => norm(x.lang) === w.lang.toLowerCase()) || voices.find((x) => norm(x.lang).startsWith('en'));
-    if (v) u.voice = v;
-    u.lang = w.lang; u.pitch = w.pitch || 1; u.rate = w.rate || 1;
-    synth.speak(u);
-    return true;
-  };
-  if ('speechSynthesis' in window) window.speechSynthesis.getVoices();
 
   // ---------- game actions ----------
   const G = (U.game = {});

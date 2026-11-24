@@ -6,15 +6,15 @@ Le tableau projeté (page admin) montre la carte de Paris, les deux cortèges en
 
 ## Le parcours
 
-| # | Lieu | Épreuve | Mécanique | Critère de la grille |
-|---|------|---------|-----------|----------------------|
-| 1 | République | 🎺 **The Lost Fanfare** | 6 musiciens répartis sur les téléphones : on les remet dans l'ordre grâce à leurs phrases, on lit leurs notes sur la portée (moyen mnémotechnique anglais *Every Good Boy Deserves Fun* / *FACE*) → mot de passe **FACADE** | Musique, logique |
-| 2 | Châtelet | 🎙️ **Street Interviews** | 6 témoins audio avec des accents différents (UK, US, Australie, Irlande, Inde) ; l'un d'eux est un zombie qui ment → le seul pont sûr (**Pont Neuf**) | Ambiance, compréhension orale |
-| ⚔️ | Le Marais | **BRAV-M Raid** (duel) | Façon Fruit Ninja sur les 12 téléphones en même temps : on tranche les zombies (+1), pas les touristes (−3). Scores en direct au tableau | Engagement |
-| 3 | Pont Neuf | 🧒 **Six or Seven?** | Les enfants zombies posent des questions dont la réponse est 6 ou 7 ; chaque joueur doit en réussir 4 | Fun, rythme |
-| 4 | Louvre | 🎨 **The Stolen Masterpiece** | Téléphone arabe dessiné : un seul joueur voit *La Liberté guidant le peuple* ; le reste de la chaîne alterne descriptions et dessins, et le dernier retrouve le tableau parmi 6 | Art visuel |
-| 🎤 | Opéra Garnier | **Karaoke Duel** (duel) | Chaque équipe réécrit le refrain de *When the Saints Go Marching In* sur ses téléphones, puis le chante au tableau avec la musique ; le prof désigne le gagnant | Musique, engagement |
-| 5 | Élysée | 🪖 **The Zombie General** | Méta-énigme : le code du bunker (4 chiffres) se déduit des cartes récoltées à chaque étape (inventaire 🎒) | Logique et structure |
+| # | Lieu | Épreuve | Mécanique | Réponse |
+|---|------|---------|-----------|---------|
+| 1 | République | 🔒 **The Locked Banner** | 6 devinettes anglaises classiques réparties sur les téléphones (*What has a neck but no head?*…). Les premières lettres des réponses ouvrent le cadenas | `BANNER` |
+| 2 | Châtelet | 📻 **The Zombie Radio** | Message codé en emojis ; chaque joueur a un morceau de la clé (🧟 = T…). Le message décodé donne le code du métro, écrit en toutes lettres en anglais | `9185` |
+| ⚔️ | Le Marais | **BRAV-M Raid** (duel) | Façon Fruit Ninja sur les 12 téléphones en même temps : on tranche les zombies (+1), pas les touristes (−3). Scores en direct au tableau | — |
+| 3 | Pont Neuf | 🤲 **Six… Seven!** | L'équipe appelle le juge depuis un téléphone, se lève et fait le geste six-seven devant le tableau ; le prof clique ✅ ou ❌ | — |
+| 4 | Louvre | 🎨 **Artists Only** | Pictionary : un joueur dessine un mot simple, les autres voient le dessin en direct et devinent en anglais. 2 dessins à trouver, dont une œuvre (*Mona Lisa* / *The Scream*) | — |
+| 🎤 | Opéra Garnier | **Karaoke Duel** (duel) | *Jingle Bells* avec 4 mots manquants à retrouver sur les téléphones ; correction automatique au tableau, puis tout le monde chante sur la musique et le prof désigne le gagnant | — |
+| 5 | Élysée | 🪖 **The Zombie General** | Le code du bunker (4 chiffres) se déduit des cartes récoltées à chaque étape (inventaire 🎒) | `6973` |
 
 **Mécaniques transversales**
 - ❌ Mauvaise réponse → **attaque zombie** : les téléphones de l'équipe sont bloqués pendant 20 à 30 s.
@@ -63,17 +63,20 @@ L'adresse ressemble à `https://<compte>.github.io/escapegame/`. L'admin est à 
 3. Appuyer sur ⚙️ → **START**.
 4. Vers **8 min** : ⚔️ raid. Vers **18 min** : 🎤 karaoké (dans ⚙️).
 5. Pendant la partie, valider les missions secrètes (pastille rouge sur ⚙️).
-6. À la fin : **🎨 Louvre chains** pour revoir en grand les dessins des élèves (succès garanti).
+6. Pont Neuf : quand une équipe appelle le juge, un grand écran s'affiche au tableau → ✅ ou ❌.
+7. À la fin : **🎨 Louvre drawings** pour revoir en grand les dessins des élèves.
 
 Pour la 2ᵉ partie, utiliser **↺ New game (keep players)**, ou changer `gameId` dans `js/config.js`.
 
-## Tableaux (images)
+## Changer la chanson du karaoké
 
-Les images des tableaux sont chargées depuis Wikimedia Commons sur les téléphones. Pour ne pas dépendre du réseau, déposez vos propres fichiers dans `img/paintings/` sous les noms : `liberty.jpg`, `medusa.jpg`, `sardanapalus.jpg`, `horatii.jpg`, `coronation.jpg`, `monalisa.jpg` (ils sont prioritaires). Si aucune image ne charge, un cadre avec le titre s'affiche.
+*Jingle Bells* est libre de droits, c'est pourquoi c'est la chanson par défaut. Pour un autre classique, dans `js/content.js` → `karaoke` :
+- remplacez `song`, `lines` (les paroles, avec `{b1}`, `{b2}`… à la place des mots à faire trouver) et `blanks` (les bonnes réponses) ;
+- mettez dans `youtube` un lien vers la musique : le bouton du tableau ouvrira ce lien au lieu de jouer la mélodie intégrée.
 
 ## Modifier le jeu
 
-**Tous les textes** (intro, indices, réponses, témoins, devinettes, missions, paroles du karaoké, noms d'équipes) sont dans `js/content.js`. Pas besoin de toucher au reste.
+**Tous les textes** (intro, indices, réponses, devinettes, message codé, mots à dessiner, missions, paroles du karaoké, noms d'équipes) sont dans `js/content.js`. Pas besoin de toucher au reste.
 La durée et Firebase sont dans `js/config.js`.
 
 | Fichier | Rôle |
@@ -90,6 +93,6 @@ La grille demande de **consulter des testeurs**. Faites une partie avec des amis
 
 Pour l'oral, chaque critère a sa réponse :
 - **Engagement** : course, duels en direct, missions secrètes, humour.
-- **Environnement** : carte vivante, sons, accents, musique (fanfare, karaoké) et art (Delacroix, Louvre).
+- **Environnement** : carte vivante qui se fait envahir, sons, musique (karaoké) et art (Louvre, Mona Lisa, The Scream).
 - **Logique et structure** : 5 étapes, un inventaire, une méta-énigme finale.
 - **Jouabilité** : un téléphone par joueur, indices, déblocage par l'admin, difficulté progressive.

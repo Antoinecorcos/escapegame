@@ -42,6 +42,7 @@
     if (v !== view) { view = v; $('#screen').innerHTML = ''; ({ lobby: mountLobby, map: mountMap, end: mountEnd })[v](); }
     ({ lobby: updateLobby, map: updateMap, end: updateEnd })[v]();
     renderEvent();
+    renderJudge();
     renderControls();
   }
 
@@ -133,14 +134,8 @@
     const ts = team(t), sg = U.stageOf(ts), ps = U.players(ts);
     const lockLeft = (ts.lockUntil || 0) - now();
     let detail = '';
-    if (sg === 2) {
-      const per = C.stages[2].perPlayer;
-      detail = `🧒 ${ps.filter((p) => ((ts.s67 && ts.s67[p.pkey]) || 0) >= per).length}/${ps.length} players across`;
-    }
-    if (sg === 3 && ts.gartic && ts.gartic.order) {
-      const o = Array.isArray(ts.gartic.order) ? ts.gartic.order : Object.values(ts.gartic.order);
-      detail = `🎨 Chain ${Object.keys(ts.gartic.steps || {}).length + 1}/${Math.max(o.length, 2)}`;
-    }
+    if (sg === 2 && ts.judge) detail = '🤲 Waiting for the judge!';
+    if (sg === 3) detail = `🎨 ${(ts.pic && ts.pic.found) || 0}/${C.stages[3].rounds} drawings found`;
     return `<div class="tp-head"><h2>${esc(C.teams[t].name)}</h2>
         <span>👥 ${ps.length}</span><span>🎟️ ${ts.tokens || 0}</span>
         ${ts.finishedAt ? '<span class="ok">🏆 ' + U.fmt(ts.finishedAt - game().startAt) + '</span>' : ''}</div>
@@ -194,10 +189,11 @@
           <p>${ts.finishedAt ? '⏱ ' + U.fmt(ts.finishedAt - game().startAt) : `Stage ${Math.min(U.stageOf(ts) + 1, U.NSTAGES)}/${U.NSTAGES}`}</p>
           <p>💡 ${Object.values(ts.hints || {}).reduce((a, b) => a + b, 0)} hints used</p></div>`;
       }).join('')}</div>
-      <button class="btn" data-a="chains">🎨 Show the Louvre chains</button>`;
+      <button class="btn" data-a="chains">🎨 Show the Louvre drawings</button>`;
   }
 
   // ---------- EVENTS ----------
+  const NUM = ['①', '②', '③', '④', '⑤', '⑥', '⑦', '⑧'];
   let evKey = null, karaokeStarts = null, karaokeTimer = null;
   function raidTotals() {
     const r = R.raid || {};
@@ -230,16 +226,18 @@
     if (ev.phase === 'write') {
       el.innerHTML = `<div class="ev karaoke-ev"><h1>🎤 ${esc(K.title)}</h1><p>${esc(K.instructions)}</p>
         <div class="ev-timer" id="ev-timer"></div>
-        <div class="lyrics template">${K.lines.slice(0, 4).map((l) => `<div>${esc(l).replace(/\{(b\d)\}/g, '<span class="blank">______</span>')}</div>`).join('')}</div>
+        <div class="lyrics template">${K.lines.slice(0, 4).map((l) => `<div>${esc(l).replace(/\{(b\d)\}/g, (_, b) => `<span class="blank">____${NUM[K.blanks.findIndex((x) => x.id === b)]}</span>`)}</div>`).join('')}</div>
         <div class="kstatus">${U.TEAMS.map((t) => `<span class="chip" style="background:${C.teams[t].color}" id="ks-${t}"></span>`).join(' ')}</div></div>`;
       return;
     }
     el.innerHTML = `<div class="ev karaoke-ev"><h1>🎤 ${esc(K.title)}</h1>
       <div class="kcols">${U.TEAMS.map((t) => {
         const k = team(t).karaoke || {};
-        return `<div class="kcol" style="--c:${C.teams[t].color}"><h2>${esc(C.teams[t].name)}</h2>
-          <div class="lyrics" id="ly-${t}">${K.lines.map((l) => `<div>${esc(l).replace(/\{(b\d)\}/g, (_, b) => `<b>${esc(k[b] || K.blanks.find((x) => x.id === b).example)}</b>`)}</div>`).join('')}</div>
-          ${ev.phase === 'sing' ? `<button class="btn" data-a="sing" data-t="${t}">▶ Play the music & sing!</button>` : ''}</div>`;
+        const good = (b) => U.norm(k[b.id]) === U.norm(b.answer);
+        const score = K.blanks.filter(good).length;
+        return `<div class="kcol" style="--c:${C.teams[t].color}"><h2>${esc(C.teams[t].name)} · ${score}/${K.blanks.length} ✔</h2>
+          <div class="lyrics" id="ly-${t}">${K.lines.map((l) => `<div>${esc(l).replace(/\{(b\d)\}/g, (_, b) => { const bl = K.blanks.find((x) => x.id === b); return good(bl) ? `<b class="good">${esc(bl.answer)}</b>` : `<b class="wrongw">${esc(k[b] || '???')}</b><b class="good small">(${esc(bl.answer)})</b>`; })}</div>`).join('')}</div>
+          ${ev.phase === 'sing' ? (K.youtube ? `<a class="btn" href="${esc(K.youtube)}" target="_blank" rel="noopener">▶ Open the music</a>` : `<button class="btn" data-a="sing" data-t="${t}">▶ Play the music & sing!</button>`) : ''}</div>`;
       }).join('')}</div>
       ${ev.phase === 'sing' ? `<p class="muted">Then the game master chooses the winner (controls ⚙️)</p>` : ''}
       <div class="ev-result" id="ev-result"></div></div>`;
@@ -248,7 +246,7 @@
     clearInterval(karaokeTimer);
     const lines = $$('#ly-' + t + ' > div');
     const base = U.audio.ctx().currentTime;
-    karaokeStarts = U.audio.saints(lines.length);
+    karaokeStarts = U.audio.melody(C.karaoke.melody);
     karaokeTimer = setInterval(() => {
       const el = U.audio.ctx().currentTime - base;
       const idx = karaokeStarts.findIndex((s, i) => el >= s && el < karaokeStarts[i + 1]);
@@ -284,7 +282,7 @@
       <div class="ctl-row"><b>Game</b>
         ${status === 'lobby' ? '<button class="btn" data-a="start">▶ START</button>' : ''}
         ${status === 'running' ? '<button class="btn small" data-a="plus5">+5 min</button><button class="btn small" data-a="minus1">−1 min</button><button class="btn small ghost" data-a="end">End game</button>' : ''}
-        <button class="btn small ghost" data-a="chains">🎨 Louvre chains</button>
+        <button class="btn small ghost" data-a="chains">🎨 Louvre drawings</button>
         <button class="btn small ghost" data-a="reset">↺ New game (keep players)</button>
         <button class="btn small danger" data-a="wipe">🗑 Full reset</button>
         <span class="muted">mode: ${S.mode}${S.mode === 'local' ? ' (test)' : ''} · game: ${esc(cfg.gameId || 'main')}</span></div>
@@ -333,28 +331,46 @@
     if (a === 'claim-ok') { const c = R.claims[b.dataset.k]; await S.update(`claims/${b.dataset.k}`, { status: 'ok' }); G.addToken(c.team, 1); }
     if (a === 'claim-no') S.update(`claims/${b.dataset.k}`, { status: 'no' });
     if (a === 'chains') showChains();
+    if (a === 'judge-ok') { await S.remove(`teams/${t}/judge`); G.advance(t, 2); }
+    if (a === 'judge-no') { await S.remove(`teams/${t}/judge`); G.lock(t, C.stages[2].lockSeconds, 'The zombie kids were NOT convinced! Practise and try again.'); }
     if (a === 'close-modal') $('#modal').hidden = true;
   });
 
   async function resetGame(wipe) {
     if (wipe) { await S.remove(''); return; }
     const up = { game: { status: 'lobby' }, event: null, raid: null, claims: null };
-    U.TEAMS.forEach((t) => { up[`teams/${t}/stage`] = 0; ['lockUntil', 'lockReason', 'tokens', 'hints', 's67', 'gartic', 'karaoke', 'finishedAt'].forEach((k) => (up[`teams/${t}/${k}`] = null)); });
+    U.TEAMS.forEach((t) => { up[`teams/${t}/stage`] = 0; ['lockUntil', 'lockReason', 'tokens', 'hints', 'judge', 'pic', 'karaoke', 'finishedAt'].forEach((k) => (up[`teams/${t}/${k}`] = null)); });
     await S.update('', up);
   }
 
   function showChains() {
-    const s = C.stages[3], pnt = s.paintings.find((p) => p.id === s.answer);
     const m = $('#modal');
     m.hidden = false;
-    m.innerHTML = `<div class="modal-inner"><h1>🎨 The Louvre chains</h1>
+    m.innerHTML = `<div class="modal-inner"><h1>🎨 The Louvre drawings</h1>
       ${U.TEAMS.map((t) => {
-        const gx = team(t).gartic || {}, steps = gx.steps || {};
-        const names = Object.fromEntries(U.players(team(t)).map((p) => [p.pkey, p.name]));
-        return `<h2 style="color:${C.teams[t].color}">${esc(C.teams[t].name)}</h2><div class="chainrow">${U.painting(pnt, 'thumb')}
-          ${Object.keys(steps).sort((a, b) => a.slice(1) - b.slice(1)).map((k) => { const it = steps[k]; return `<span class="arrow">➜</span><div class="chainitem">${it.type === 'img' ? `<img src="${it.v}">` : `<p>“${esc(it.v)}”</p>`}<small>${esc(names[it.by] || '🧟')}</small></div>`; }).join('')}</div>`;
+        const gal = (team(t).pic && team(t).pic.gallery) || {};
+        const items = Object.keys(gal).sort((a, b) => a.slice(1) - b.slice(1)).map((k) => gal[k]);
+        return `<h2 style="color:${C.teams[t].color}">${esc(C.teams[t].name)}</h2><div class="chainrow">${items.length ? items.map((it) => `<div class="chainitem">${it.img ? `<img src="${it.img}">` : ''}<p><b>${esc(it.word)}</b></p><small>by ${esc(it.by)}</small></div>`).join('') : '<p class="muted">No drawing yet.</p>'}</div>`;
       }).join('')}
       <button class="btn" data-a="close-modal">Close</button></div>`;
+  }
+
+  // ---------- SIX-SEVEN JUDGE (shown on the board) ----------
+  function renderJudge() {
+    const el = $('#judge');
+    const t = !R.event && game().status === 'running' && U.TEAMS.find((x) => team(x).judge && U.stageOf(team(x)) === 2);
+    const key = t || null;
+    if (el.dataset.k === String(key)) return;
+    el.dataset.k = String(key);
+    el.hidden = !t;
+    if (!t) { el.innerHTML = ''; return; }
+    U.audio.jingle();
+    el.innerHTML = `<div class="ev judge-ev" style="--c:${C.teams[t].color}">
+      <div class="judge-kids">${U.zombie(110, { skin: '#a9d46f' })}${U.zombie(140, { skin: '#a9d46f' })}${U.zombie(110, { skin: '#a9d46f' })}</div>
+      <h1><span style="color:${C.teams[t].color}">${esc(C.teams[t].name)}</span>: SIX-SEVEN CHECK!</h1>
+      <p>Whole team, stand up and do the gesture… <b>“SIX… SEVEN!”</b> 🤲</p>
+      <div class="row judge-btns"><button class="btn huge-ok" data-a="judge-ok" data-t="${t}">✅ Approved</button>
+      <button class="btn huge-no" data-a="judge-no" data-t="${t}">❌ Not convinced</button></div></div>`;
   }
 
   setInterval(() => {
